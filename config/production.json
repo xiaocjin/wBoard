@@ -1,0 +1,30 @@
+{
+    "express": {
+        "port": 8443,
+        "staticCache": 6048000000
+    },
+    "logger": {
+        "filename": "logs/run.log",
+        "level": "info"
+    },
+    "redis": {
+        "port": 6379,
+        "host": "localhost",
+        "pass": "lemote_101",
+        "session_db": 0,
+        "data_db": 1
+    },
+    "sockets": {
+        "loglevel": 1,
+        "pollingduration": 10,
+        "browserclientminification": false,
+        "browserclientetag": false,
+        "browserclientgzip": false
+    },
+    "session": {
+        "secret": "lemote_wBoard",
+        "maxAge": null,
+        "secure": false,
+        "httpOnly": true
+    }
+}
