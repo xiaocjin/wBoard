@@ -2,8 +2,6 @@
  * Created by jinxc on 14-5-16.
  */
 var http = require('http')
-    , config = require('../config')
-    , db = config.get("redis:data_db")
     , logger = require("../logger")
     , Socket = require('../socket')
     , Board = require('../lib/wBoard')
@@ -23,7 +21,7 @@ function SocketHandler(httpServer) {
             var data = message.data;
             var cb = callback || function () {
             };
-            redis.get('socket:' + socket.id, function (err, result) {
+            redis.hget('wb:socket', socket.id, function (err, result) {
                 var user_data = JSON.parse(result);
                 if (user_data) {
                     var cid = user_data.cid;
@@ -37,8 +35,10 @@ function SocketHandler(httpServer) {
                             socket.broadcast.to(cid).emit(action, data);
                             break;
                         case "createObject":
-                            board.createObject(cid, cb);
-                            socket.broadcast.to(cid).emit(action, data);
+                            board.createObject(cid, function (err, d) {
+                                socket.broadcast.to(cid).emit(action, d);
+                                cb(err, d);
+                            });
                             break;
                         case "drawObject":
                             board.drawObject(data, cid, cb);
@@ -49,8 +49,10 @@ function SocketHandler(httpServer) {
                             socket.broadcast.to(cid).emit(action, data);
                             break;
                         case "createBoard":
-                            board.createBoard(cid, cb);
-                            socket.broadcast.to(cid).emit(action, data);
+                            board.createBoard(cid, function (err, d) {
+                                socket.broadcast.to(cid).emit(action, d);
+                                cb(err, d);
+                            });
                             break;
                         case "updateBoard":
                             board.updateBoard(data, cid, cb);
@@ -73,7 +75,7 @@ function SocketHandler(httpServer) {
 
         socket.on('disconnect', function () {
             console.log('disconnect ', socket.id);
-            redis.del(socket.id);
+            redis.hdel('wb:socket', socket.id);
             /**
              * 离开房间
              */
@@ -99,8 +101,11 @@ function SocketHandler(httpServer) {
             var info = {};
             _.extend(info, message);
             info.socket = socket.id;
-            redis.set('user:' + message.user, socket.id);
-            redis.set('socket:' + socket.id, JSON.stringify(info));
+            redis.set('wb:user:' + message.user, socket.id);
+            //redis.expire('wb:user:' + message.user, 86400);
+
+            redis.hset('wb:socket', socket.id, JSON.stringify(info));
+
             socket.join(cid);
             var data = {};
             var room = new Array();
@@ -111,6 +116,8 @@ function SocketHandler(httpServer) {
             }
             data.room = room;
             cb(null, data);
+            //通知php服务器有用户登录
+
         });
 
         /**
@@ -119,10 +126,10 @@ function SocketHandler(httpServer) {
         socket.on('command', function (message, callback) {
             async.parallel({
                 info: function (cb) {
-                    redis.get('socket:' + socket.id, cb);
+                    redis.hget('wb:socket', socket.id, cb);
                 },
                 socketId: function (cb) {
-                    redis.get('user:' + message.user, cb);
+                    redis.get('wb:user:' + message.user, cb);
                 }
             }, function (err, result) {
                 var info = JSON.parse(result.info);
@@ -143,8 +150,38 @@ function SocketHandler(httpServer) {
         /**
          * 聊天通道
          */
+        socket.on('video', function (message, callback) {
+            redis.hget('wb:socket', socket.id, function (err, result) {
+                var action = message.action;
+                var data = message.data;
+                var user_data = JSON.parse(result);
+                if (user_data) {
+                    var cid = user_data.cid;
+                    var obj = {
+                        user: user_data.user,
+                        data: data
+                    };
+                    socket.broadcast.to(cid).emit(action, obj);
+                    var cb = callback || function () {
+                    };
+                    if (action == 'live_on') {
+                        board.video_on(data, cid, function (err) {
+                            cb(err);
+                        })
+                    } else {
+                        board.video_off(data, cid, function (err) {
+                            cb(err);
+                        })
+                    }
+                }
+            });
+        });
+
+        /**
+         * 视频命令
+         */
         socket.on('chart', function (message, callback) {
-            redis.get('socket:' + socket.id, function (err, result) {
+            redis.hget('wb:socket', socket.id, function (err, result) {
                 var user_data = JSON.parse(result);
                 if (user_data) {
                     var obj = {
@@ -157,7 +194,6 @@ function SocketHandler(httpServer) {
                     cb(null);
                 }
             });
-
         });
     });
 

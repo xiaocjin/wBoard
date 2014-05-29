@@ -5,7 +5,9 @@
 
     var communicate = {};
 
-    var socket = io.connect(null);
+    var socket = io.connect(null, {
+        reconnect: false
+    });
 
     /**
      *
@@ -22,6 +24,31 @@
         }
         socket.emit('author', message, cb);
     };
+
+    /**
+     * 开启视频
+     * @param data
+     * @param cb
+     */
+    communicate.openVideo = function (data, cb) {
+        var message = {
+            data: data,
+            action: 'live_on'
+        }
+        socket.emit('video', message, cb);
+    }
+
+    /**
+     * 关闭视频
+     * @param data
+     * @param cb
+     */
+    communicate.closeVideo = function (cb) {
+        var message = {
+            action: 'live_off'
+        }
+        socket.emit('video', message, cb);
+    }
 
     /**
      *聊天
@@ -192,33 +219,27 @@
         socket.emit('message', message, cb);
     };
 
-    socket.on('reconnect', function () {
-        console.log('reconnect:' + socket.socket.sessionid, new Date())
-    })
-    /**
-     * 重连，无限重复
-     */
-    socket.on('reconnecting', function () {
-        console.log('reconnecting:' + socket.socket.sessionid, new Date())
-    })
-    socket.on('reconnect_failed', function () {
-        console.log('reconnect_failed:' + socket.socket.sessionid, new Date())
-    })
     /**
      * 链接成功
      */
     socket.on('connect', function () {
         console.log('connect:' + socket.socket.sessionid, new Date());
-    })
+        //author
+
+
+    });
     /**
      * 链接断开
      */
     socket.on('disconnect', function () {
         console.log('disconnect:' + socket.socket.sessionid, new Date());
-    })
+        //通知用户链接断开，刷新页面重新连接
+
+
+    });
     socket.on('error', function () {
         console.log('error:' + socket.socket.sessionid, new Date());
-    })
+    });
 
     window.socket = socket;
     window.communicate = communicate;

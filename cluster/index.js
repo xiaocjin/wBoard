@@ -2,7 +2,8 @@ var cluster = require('cluster')
     , http = require('http')
     , numCPUs = require('os').cpus().length
     , logger = require('../logger/index')
-    , domain = require('domain');
+    , domain = require('domain')
+    //, job = require('../lib/job');
 
 function Cluster() {
 }
@@ -17,6 +18,7 @@ Cluster.prototype.run = function (module) {
             logger.info('Worker ' + worker.process.pid + ' died');
             cluster.fork();
         });
+        //job.start();
     } else {
         var d = domain.create();
 

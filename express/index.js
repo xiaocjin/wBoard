@@ -1,13 +1,13 @@
 var express = require('express')
     , config = require('../config')
-    , db = config.get("redis:session_db")
+//    , db = config.get("redis:session_db")
     , routes = require('../routes')
     , notFound = require('../lib/notFound')
     , SocketHandler = require('../socket/handler')
     , app = express()
-    , Redis = require('../cache/redis')
-    , redis = new Redis(db)
-    , RedisStore = require('connect-redis')(express)
+//    , Redis = require('../cache/redis')
+//    , redis = new Redis(db)
+//    , RedisStore = require('connect-redis')(express)
     , logger = require("../logger")
     , http = require('http');
 
